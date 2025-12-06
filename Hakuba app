@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>❄️ 白馬雪國之旅 (移動版) ⛷️</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 Vue 3 (CDN 版本) -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- 載入 Lucide Icons for aesthetic icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* 自定義 Tailwind 配置 */
+        /* 使用 Inter 字體 */
+        :root {
+            --color-primary: #3b82f6; /* 冰雪藍 */
+            --color-secondary: #0f172a; /* 深夜藍/底色 */
+            --color-text: #e2e8f0; /* 淺灰白 */
+            --color-card: #1e293b; /* 卡片背景 */
+            --color-onsen: #ff8f68; /* 溫泉橘 */
+        }
+
+        body {
+            background-color: var(--color-secondary);
+            font-family: 'Inter', sans-serif;
+            color: var(--color-text);
+            /* 模擬手機 App 邊緣的柔軟度 */
+            overflow-x: hidden; 
+        }
+
+        /* 模擬手機 App 容器，限制最大寬度，並置中 */
+        #app {
+            max-width: 450px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: #0f172a; /* 確保主內容區背景一致 */
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5); /* 增加 App 質感陰影 */
+        }
+
+        /* 行程卡片的過渡效果 */
+        .details-enter-active, .details-leave-active {
+            transition: all 0.3s ease-out;
+            max-height: 300px;
+        }
+        .details-enter-from, .details-leave-to {
+            opacity: 0;
+            transform: translateY(-10px);
+            max-height: 0;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+        
+        /* 頁首圖片容器 */
+        .banner-container {
+            height: 250px;
+            overflow: hidden;
+            background-color: #1a202c;
+        }
+
+        /* 溫泉標籤動畫 */
+        .onsen-tag {
+            animation: pulse-onsen 2s infinite;
+        }
+
+        @keyframes pulse-onsen {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.03); opacity: 0.8; }
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="app" class="pb-10">
+    
+    <!-- 1. 頁首 Banner (滿版冰雪山景) -->
+    <div class="banner-container relative">
+        <!-- 圖片尺寸 1920x400 placeholder for image_db5bdc.png -->
+        <img src="https://placehold.co/1920x400/0f172a/94a3b8?text=Hakuba+Snow+Banner"
+             onerror="this.onerror=null;this.src='https://placehold.co/1920x400/0f172a/94a3b8?text=Hakuba+Snow+Banner'"
+             alt="白馬雪山橫幅"
+             class="w-full h-full object-cover">
+        
+        <div class="absolute inset-0 bg-black bg-opacity-30 flex items-end p-6">
+            <h1 class="text-3xl font-bold text-white tracking-wider drop-shadow-lg">
+                白馬雪國之旅 ❄️
+            </h1>
+        </div>
+    </div>
+
+    <!-- 2. 行程列表 -->
+    <main class="p-4 pt-6">
+        <p class="text-sm text-gray-400 mb-6 text-center">11天10夜 / 12/27 - 01/06</p>
+
+        <div v-for="(item, index) in itinerary" :key="index"
+             class="bg-gray-800/50 backdrop-blur-sm rounded-xl mb-4 shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-sky-500/20">
+            
+            <!-- 卡片標題 (點擊區) -->
+            <div @click="toggleDetails(index)"
+                 class="p-4 flex justify-between items-center cursor-pointer transition-colors duration-200"
+                 :class="{ 'bg-gray-700/70': item.expanded, 'bg-gray-800': !item.expanded }">
+                
+                <div class="flex items-start flex-col">
+                    <p class="text-xs text-sky-400 font-medium mb-1">{{ item.date }} | {{ item.day }}</p>
+                    <h2 class="text-lg font-semibold text-white flex items-center">
+                        <i :data-lucide="getIconName(item.main)" class="w-5 h-5 mr-2" :class="getIconColor(item.main)"></i>
+                        {{ item.main }}
+                    </h2>
+                    <span v-if="item.onsen" class="onsen-tag text-sm font-bold mt-1" :style="{ color: 'var(--color-onsen)' }">
+                        ♨️ {{ item.onsen }}
+                    </span>
+                </div>
+                
+                <i :data-lucide="item.expanded ? 'chevron-up' : 'chevron-down'" class="w-6 h-6 text-sky-400 transition-transform duration-300"></i>
+            </div>
+
+            <!-- 3. 詳細內容 (可展開/收合) -->
+            <Transition name="details">
+                <div v-show="item.expanded" class="p-4 pt-2 border-t border-gray-700/50">
+                    <h3 class="text-base font-semibold text-sky-300 mb-2">活動重點：{{ item.activity }}</h3>
+                    <ul class="list-none p-0 space-y-2 text-sm text-gray-300">
+                        <li v-for="(detail, i) in item.details" :key="i" class="flex items-start">
+                            <span class="text-sky-400 mr-2 mt-1">•</span>
+                            <span>{{ detail }}</span>
+                        </li>
+                    </ul>
+
+                    <!-- 4. Google Maps & 導航整合 -->
+                    <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                        <a :href="getMapLink(item.mapLocation)" target="_blank"
+                           class="flex-grow flex items-center justify-center p-2 rounded-lg text-white font-medium transition-colors duration-200"
+                           :class="item.mapLocation ? 'bg-sky-600 hover:bg-sky-700' : 'bg-gray-500 cursor-not-allowed'"
+                           :disabled="!item.mapLocation">
+                            <i data-lucide="map-pin" class="w-4 h-4 mr-2"></i>
+                            在地圖上查看
+                        </a>
+                    </div>
+                </div>
+            </Transition>
+        </div>
+    </main>
+</div>
+
+<script>
+    const { createApp, ref, onMounted } = Vue;
+
+    createApp({
+        setup() {
+            const itinerary = ref([
+                {
+                    date: '12/27 (五)', day: 'Day 1', main: '抵達東京 (NRT) ✈️', activity: '長途駕駛至白馬', accommodation: '雪ノ音', onsen: '',
+                    mapLocation: '成田國際機場',
+                    details: ['華航 CI104 12:35 出發，預計傍晚抵達。', '機場取車 (4WD + 雪胎)。', '車程約 5.5 小時，注意安全。'], expanded: false
+                },
+                {
+                    date: '12/28 (日)', day: 'Day 2', main: '滑雪日 1：栂池高原 ⛷️', activity: '寬闊雪道暖身適應', accommodation: '雪ノ音', onsen: '',
+                    mapLocation: '栂池高原滑雪場',
+                    details: ['雪場特色：寬闊緩坡，極適合作為第一天的熱身。', '建議：專注於基礎技巧，習慣雪感。'], expanded: false
+                },
+                {
+                    date: '12/29 (一)', day: 'Day 3', main: '滑雪日 2：白馬岩岳 ⛷️', activity: '中級雪道、山頂觀景', accommodation: '雪ノ音', onsen: '倉下之湯',
+                    mapLocation: '白馬岩岳雪場',
+                    details: ['雪場特色：必訪 HAKUBA MOUNTAIN HARBOR 觀景台。', '溫泉：晚餐後前往倉下之湯，享受絕佳露天風呂。'], expanded: false
+                },
+                {
+                    date: '12/30 (二)', day: 'Day 4', main: '滑雪日 3：八方尾根 ⛷️', activity: '挑戰開始 - 奧運賽道', accommodation: '雪ノ音', onsen: '',
+                    mapLocation: '八方尾根滑雪場',
+                    details: ['雪場特色：挑戰白馬最陡峭的奧運賽道與黑線區。', '建議：從兎平開始適應，注意安全。'], expanded: false
+                },
+                {
+                    date: '12/31 (三)', day: 'Day 5', main: '滑雪日 4：八方尾根 ⛷️', activity: '指定日滑雪', accommodation: '雪ノ音', onsen: '八方溫泉 O-yu',
+                    mapLocation: '八方溫泉 O-yu',
+                    details: ['策略：專注於高級雪道的完成。', '溫泉：八方溫泉 O-yu，位於八方中心，體驗美肌之湯，晚上留意跨年活動。'], expanded: false
+                },
+                {
+                    date: '01/01 (四)', day: 'Day 6', main: '休息日：戶隱神社 ⛩️', activity: '新年參拜與巨木林', accommodation: '雪ノ音', onsen: '',
+                    mapLocation: '戶隱神社',
+                    details: ['避峰：元旦人潮眾多，清晨出發拍攝巨木林，避開參拜時段。', '周邊：可搭配長野市善光寺或小布施町。', '駕駛：單程約 1.5-2 小時。'], expanded: false
+                },
+                {
+                    date: '01/02 (五)', day: 'Day 7', main: '滑雪日 5：五竜 & 47 ⛷️', activity: '地形與雪板公園', accommodation: '雪ノ音', onsen: '龍神之湯',
+                    mapLocation: '白馬五竜滑雪場',
+                    details: ['雪場特色：47有高品質的雪板公園，五竜雪道寬敞。', '溫泉：龍神之湯，位於五竜 Escal Plaza 內，滑完直接泡湯最方便。'], expanded: false
+                },
+                {
+                    date: '01/03 (六)', day: 'Day 8', main: '滑雪日 6：Sanosaka ⛷️', activity: '青木湖景觀滑雪', accommodation: '雪ノ音', onsen: '',
+                    mapLocation: '白馬 Sanosaka 滑雪場',
+                    details: ['雪場特色：人潮相對稀疏，擁有面向青木湖的絕美景觀。', '建議：適合輕鬆滑行與拍照。'], expanded: false
+                },
+                {
+                    date: '01/04 (日)', day: 'Day 9', main: '滑雪日 7：Cortina & Norikura ⛷️', activity: '粉雪追逐 (Powder Day)', accommodation: '雪ノ音', onsen: '',
+                    mapLocation: '白馬 Cortina 國際滑雪場',
+                    details: ['雪場特色：素有「Powder Kingdom」美譽，追逐最深、最鬆軟的粉雪。', '注意：若遇新雪，人潮較多。'], expanded: false
+                },
+                {
+                    date: '01/05 (一)', day: 'Day 10', main: '休息日：溫泉巡禮 ♨️', activity: '松本城或白馬溫泉巡禮', accommodation: '雪ノ音', onsen: '',
+                    mapLocation: '松本城',
+                    details: ['選項：自駕 1.5 小時到國寶級松本城參觀。', '放鬆：在白馬村內進行最後採買，或再次前往喜歡的溫泉。'], expanded: false
+                },
+                {
+                    date: '01/06 (二)', day: 'Day 11', main: '返程：經輕井澤 🚗', activity: '開車回東京 (NRT)、還車、返台', accommodation: '行程結束', onsen: '',
+                    mapLocation: '輕井澤',
+                    details: ['中途休息站：輕井澤 (Karuizawa)，從白馬開車約 2.5 小時。', '建議：可在 Harunire Terrace 或舊輕井澤銀座稍作休息與午餐。', '返程：輕井澤到 NRT 仍需約 3 小時車程。CI109 19:30 出發。'], expanded: false
+                }
+            ]);
+
+            // 展開/收合卡片細節
+            const toggleDetails = (index) => {
+                // 實作單獨收合，其他保持不變
+                itinerary.value[index].expanded = !itinerary.value[index].expanded;
+            };
+
+            // 根據活動內容選擇 Lucide Icon
+            const getIconName = (main) => {
+                if (main.includes('滑雪')) return 'snowflake';
+                if (main.includes('抵達') || main.includes('返程')) return 'plane-takeoff';
+                if (main.includes('神社') || main.includes('松本城')) return 'temple';
+                if (main.includes('溫泉') || main.includes('休息')) return 'heart-handshake';
+                return 'map-pin';
+            };
+
+            // 根據活動內容選擇圖標顏色
+            const getIconColor = (main) => {
+                if (main.includes('滑雪')) return 'text-sky-300';
+                if (main.includes('抵達') || main.includes('返程')) return 'text-indigo-400';
+                if (main.includes('神社') || main.includes('松本城')) return 'text-yellow-400';
+                if (main.includes('溫泉') || main.includes('休息')) return 'text-red-400';
+                return 'text-gray-400';
+            };
+            
+            // 生成 Google Maps 連結 (無需 API Key 即可導航)
+            const getMapLink = (location) => {
+                if (!location) return '#';
+                const base = 'https://www.google.com/maps/search/';
+                const encodedLocation = encodeURIComponent(location);
+                return `${base}${encodedLocation}`;
+            };
+            
+            // Vue 組件掛載後初始化 Lucide Icons
+            onMounted(() => {
+                // 使用 Lucide 提供的函式渲染所有 data-lucide 的元素
+                lucide.createIcons();
+            });
+
+            return {
+                itinerary,
+                toggleDetails,
+                getIconName,
+                getIconColor,
+                getMapLink
+            };
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
+
